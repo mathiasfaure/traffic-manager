@@ -1,4 +1,4 @@
-deployment-ui/
+# deployment-ui/
 .DS_Store
 node_modules/
 *.log 
