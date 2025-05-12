@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, Autocomplete, TextField, Button, Stack, Snackbar, Alert } from '@mui/material';
-import { getAPIGateway, putAPIGateway, APIGateway } from './api/apigateway';
+import { getHTTPRoute, putHTTPRoute, HTTPRoute } from './api/apigateway';
 
 type ServiceOption = { label: string; value: string; disabled?: boolean };
 
@@ -18,11 +18,12 @@ export default function DefineBlueGreenScreen() {
 
   useEffect(() => {
     setLoading(true);
-    getAPIGateway('default', 'sample-apigateway')
+    getHTTPRoute('default', 'sample-route')
       .then((data) => {
-        setBlueService(data.spec.defaultBackend || null);
-        // Set greenService from the first rule's backend if available
-        setGreenService(data.spec.rules?.[0]?.backend || null);
+        // Set blueService from the first backendRef if available
+        setBlueService(data.spec.rules?.[0]?.backendRefs?.[0]?.name || null);
+        // Set greenService from the second rule's backendRef if available
+        setGreenService(data.spec.rules?.[1]?.backendRefs?.[0]?.name || null);
       })
       .catch((e) => setSnackbar({ open: true, message: e.message, severity: 'error' }))
       .finally(() => setLoading(false));
@@ -40,21 +41,28 @@ export default function DefineBlueGreenScreen() {
     setLoading(true);
     try {
       // Fetch current CRD to get resourceVersion
-      const current = await getAPIGateway('default', 'sample-apigateway');
-      const updated: APIGateway = {
+      const current = await getHTTPRoute('default', 'sample-route');
+      const updated: HTTPRoute = {
         ...current,
         spec: {
           ...current.spec,
-          defaultBackend: blueService,
           rules: [
             {
-              match: { header: 'x-nexus-user-id', value: '999' },
-              backend: greenService,
+              matches: [
+                {
+                  headers: [
+                    { name: 'x-nexus-user-id', value: '999' },
+                  ],
+                },
+              ],
+              backendRefs: [
+                { name: greenService!, port: 80 },
+              ],
             },
           ],
         },
       };
-      await putAPIGateway('default', 'sample-apigateway', updated, 'frontend-user');
+      await putHTTPRoute('default', 'sample-route', updated, 'frontend-user');
       setSnackbar({ open: true, message: 'Mappings saved successfully!', severity: 'success' });
     } catch (e: any) {
       setSnackbar({ open: true, message: e.message, severity: 'error' });

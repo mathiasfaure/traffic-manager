@@ -1,5 +1,5 @@
-// API client for APIGateway CRD
-export interface APIGateway {
+// API client for HTTPRoute CRD
+export interface HTTPRoute {
   apiVersion: string;
   kind: string;
   metadata: {
@@ -8,24 +8,28 @@ export interface APIGateway {
     resourceVersion?: string;
   };
   spec: {
-    defaultBackend: string;
-    rules: {
-      match: { header: string; value: string };
-      backend: string;
-    }[];
+    parentRefs: { name: string }[];
+    rules: HTTPRouteRule[];
   };
+}
+
+export interface HTTPRouteRule {
+  matches?: {
+    headers?: { name: string; value: string }[];
+  }[];
+  backendRefs?: { name: string; port: number }[];
 }
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
-export async function getAPIGateway(namespace: string, name: string): Promise<APIGateway> {
-  const res = await fetch(`${BASE_URL}/apigateway/${namespace}/${name}`);
+export async function getHTTPRoute(namespace: string, name: string): Promise<HTTPRoute> {
+  const res = await fetch(`${BASE_URL}/httproute/${namespace}/${name}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-export async function putAPIGateway(namespace: string, name: string, data: APIGateway, user?: string): Promise<APIGateway> {
-  const res = await fetch(`${BASE_URL}/apigateway/${namespace}/${name}`,
+export async function putHTTPRoute(namespace: string, name: string, data: HTTPRoute, user?: string): Promise<HTTPRoute> {
+  const res = await fetch(`${BASE_URL}/httproute/${namespace}/${name}`,
     {
       method: "PUT",
       headers: {
@@ -39,8 +43,8 @@ export async function putAPIGateway(namespace: string, name: string, data: APIGa
   return res.json();
 }
 
-export async function patchAPIGateway(namespace: string, name: string, patch: Partial<APIGateway["spec"]>, user?: string): Promise<APIGateway> {
-  const res = await fetch(`${BASE_URL}/apigateway/${namespace}/${name}`,
+export async function patchHTTPRoute(namespace: string, name: string, patch: Partial<HTTPRoute["spec"]>, user?: string): Promise<HTTPRoute> {
+  const res = await fetch(`${BASE_URL}/httproute/${namespace}/${name}`,
     {
       method: "PATCH",
       headers: {

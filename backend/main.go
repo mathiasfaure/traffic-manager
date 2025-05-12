@@ -25,18 +25,21 @@ var (
 	}
 )
 
-func main() {
-	http.HandleFunc("/httproute/", func(w http.ResponseWriter, r *http.Request) {
-		// CORS headers
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, PATCH, OPTIONS")
-
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
 
+func main() {
+	http.Handle("/httproute/", withCORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		switch r.Method {
 		case http.MethodGet:
@@ -48,7 +51,8 @@ func main() {
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})
+	})))
+	// Add more handlers here, e.g. for /apigateway/, and they will get CORS automatically
 	log.Println("Listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

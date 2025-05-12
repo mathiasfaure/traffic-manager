@@ -34,7 +34,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { headerMappings } from './@deployment-ui/config/headers';
-import { getAPIGateway, patchAPIGateway, APIGateway } from './api/apigateway';
+import { getHTTPRoute, patchHTTPRoute, HTTPRoute } from './api/apigateway';
 
 // Stub: initial rules
 const initialRules = [
@@ -67,15 +67,15 @@ export default function RoutingControlScreen() {
 
   useEffect(() => {
     setLoading(true);
-    getAPIGateway('default', 'sample-apigateway')
+    getHTTPRoute('default', 'sample-route')
       .then((data) => {
-        setDefaultRoute((data.spec.defaultBackend as 'blue' | 'green') || 'blue');
+        setDefaultRoute((data.spec.rules?.[0]?.backendRefs?.[0]?.name === 'green' ? 'green' : 'blue') as 'blue' | 'green');
         setRules(
           (data.spec.rules || []).map((r, i) => ({
             id: i + 1,
-            header: headerMappings.find(m => m.actual === r.match.header)?.logical || r.match.header,
-            value: r.match.value,
-            target: r.backend,
+            header: r.matches?.[0]?.headers?.[0]?.name || '',
+            value: r.matches?.[0]?.headers?.[0]?.value || '',
+            target: r.backendRefs?.[0]?.name || '',
           }))
         );
       })
@@ -86,14 +86,21 @@ export default function RoutingControlScreen() {
   const syncRulesToBackend = async (newRules: typeof rules, newDefault: 'blue' | 'green') => {
     setLoading(true);
     try {
-      await patchAPIGateway('default', 'sample-apigateway', {
-        defaultBackend: newDefault,
+      await patchHTTPRoute('default', 'sample-route', {
         rules: newRules.map(r => ({
-          match: {
-            header: headerMappings.find(m => m.logical === r.header)?.actual || r.header,
-            value: r.value,
-          },
-          backend: r.target,
+          matches: [
+            {
+              headers: [
+                {
+                  name: headerMappings.find(m => m.logical === r.header)?.actual || r.header,
+                  value: r.value,
+                },
+              ],
+            },
+          ],
+          backendRefs: [
+            { name: r.target, port: 80 },
+          ],
         })),
       }, 'frontend-user');
       setSnackbar({ open: true, message: 'Routing updated', severity: 'success' });
