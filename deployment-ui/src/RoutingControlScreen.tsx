@@ -35,6 +35,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { headerMappings } from './@deployment-ui/config/headers';
 import { getHTTPRoute, patchHTTPRoute, HTTPRoute } from './api/apigateway';
+import { ROUTE_NAMESPACE, ROUTE_NAME } from './@deployment-ui/config/routing';
 
 // Stub: initial rules
 const initialRules = [
@@ -67,7 +68,7 @@ export default function RoutingControlScreen() {
 
   useEffect(() => {
     setLoading(true);
-    getHTTPRoute('default', 'sample-route')
+    getHTTPRoute(ROUTE_NAMESPACE, ROUTE_NAME)
       .then((data) => {
         setDefaultRoute((data.spec.rules?.[0]?.backendRefs?.[0]?.name === 'green' ? 'green' : 'blue') as 'blue' | 'green');
         setRules(
@@ -86,7 +87,7 @@ export default function RoutingControlScreen() {
   const syncRulesToBackend = async (newRules: typeof rules, newDefault: 'blue' | 'green') => {
     setLoading(true);
     try {
-      await patchHTTPRoute('default', 'sample-route', {
+      await patchHTTPRoute(ROUTE_NAMESPACE, ROUTE_NAME, {
         rules: newRules.map(r => ({
           matches: [
             {

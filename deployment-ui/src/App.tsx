@@ -6,6 +6,8 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import RouteIcon from '@mui/icons-material/AltRoute';
 import DefineBlueGreenScreen from './DefineBlueGreenScreen';
 import RoutingControlScreen from './RoutingControlScreen';
+import SettingsScreen from './SettingsScreen';
+import { ROUTE_NAMESPACE, ROUTE_NAME } from './@deployment-ui/config/routing';
 
 const drawerWidth = 240;
 
@@ -58,6 +60,7 @@ export default function App() {
           <Routes>
             <Route path="/define" element={<DefineBlueGreenScreen />} />
             <Route path="/routing" element={<RoutingControlScreen />} />
+            <Route path="/settings" element={<SettingsScreen />} />
             <Route path="*" element={<Navigate to="/define" replace />} />
           </Routes>
         </Box>

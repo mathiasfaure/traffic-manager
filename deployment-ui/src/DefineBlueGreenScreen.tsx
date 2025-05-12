@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, Autocomplete, TextField, Button, Stack, Snackbar, Alert } from '@mui/material';
 import { getHTTPRoute, putHTTPRoute, HTTPRoute } from './api/apigateway';
+import { ROUTE_NAMESPACE, ROUTE_NAME } from './@deployment-ui/config/routing';
 
 type ServiceOption = { label: string; value: string; disabled?: boolean };
 
@@ -18,7 +19,7 @@ export default function DefineBlueGreenScreen() {
 
   useEffect(() => {
     setLoading(true);
-    getHTTPRoute('default', 'sample-route')
+    getHTTPRoute(ROUTE_NAMESPACE, ROUTE_NAME)
       .then((data) => {
         // Set blueService from the first backendRef if available
         setBlueService(data.spec.rules?.[0]?.backendRefs?.[0]?.name || null);
@@ -41,7 +42,7 @@ export default function DefineBlueGreenScreen() {
     setLoading(true);
     try {
       // Fetch current CRD to get resourceVersion
-      const current = await getHTTPRoute('default', 'sample-route');
+      const current = await getHTTPRoute(ROUTE_NAMESPACE, ROUTE_NAME);
       const updated: HTTPRoute = {
         ...current,
         spec: {
@@ -62,7 +63,7 @@ export default function DefineBlueGreenScreen() {
           ],
         },
       };
-      await putHTTPRoute('default', 'sample-route', updated, 'frontend-user');
+      await putHTTPRoute(ROUTE_NAMESPACE, ROUTE_NAME, updated, 'frontend-user');
       setSnackbar({ open: true, message: 'Mappings saved successfully!', severity: 'success' });
     } catch (e: any) {
       setSnackbar({ open: true, message: e.message, severity: 'error' });
