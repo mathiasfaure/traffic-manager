@@ -13,9 +13,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "raw": "{{baseUrl}}/httproute/default/sample-route",
           "host": ["{{baseUrl}}"],
-          "path": ["apigateway", "default", "sample-apigateway"]
+          "path": ["httproute", "default", "sample-route"]
         }
       },
       "response": []
@@ -30,12 +30,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"apiVersion\": \"traffic-manager.io/v1alpha1\",\n  \"kind\": \"APIGateway\",\n  \"metadata\": {\n    \"name\": \"sample-apigateway\",\n    \"namespace\": \"default\"\n  },\n  \"spec\": {\n    \"defaultBackend\": \"blue\",\n    \"rules\": [\n      {\n        \"match\": {\"header\": \"x-nexus-user-id\", \"value\": \"999\"},\n        \"backend\": \"green\"\n      }\n    ]\n  }\n}"
+          "raw": "{\n  \"apiVersion\": \"gateway.networking.k8s.io/v1\",\n  \"kind\": \"HTTPRoute\",\n  \"metadata\": {\n    \"name\": \"sample-route\",\n    \"namespace\": \"default\"\n  },\n  \"spec\": {\n    \"parentRefs\": [\n      {\n        \"name\": \"example-gateway\"\n      }\n    ],\n    \"rules\": [\n      {\n        \"matches\": [\n          {\n            \"headers\": [\n              {\n                \"name\": \"x-nexus-user-id\",\n                \"value\": \"999\"\n              }\n            ]\n          }\n        ],\n        \"backendRefs\": [\n          {\n            \"name\": \"green\",\n            \"port\": 80\n          }\n        ]\n      }\n    ]\n  }\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "raw": "{{baseUrl}}/httproute/default/sample-route",
           "host": ["{{baseUrl}}"],
-          "path": ["apigateway", "default", "sample-apigateway"]
+          "path": ["httproute", "default", "sample-route"]
         }
       },
       "event": [
@@ -45,9 +45,8 @@
             "exec": [
               "pm.test(\"PUT updated backend and rule\", function () {",
               "  var json = pm.response.json();",
-              "  pm.expect(json.spec.defaultBackend).to.eql(\"blue\");",
-              "  pm.expect(json.spec.rules[0].backend).to.eql(\"green\");",
-              "  pm.expect(json.spec.rules[0].match.value).to.eql(\"999\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].name).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].matches[0].headers[0].value).to.eql(\"999\");",
               "});"
             ],
             "type": "text/javascript"
@@ -62,9 +61,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "raw": "{{baseUrl}}/httproute/default/sample-route",
           "host": ["{{baseUrl}}"],
-          "path": ["apigateway", "default", "sample-apigateway"]
+          "path": ["httproute", "default", "sample-route"]
         }
       },
       "event": [
@@ -74,9 +73,8 @@
             "exec": [
               "pm.test(\"GET after PUT reflects update\", function () {",
               "  var json = pm.response.json();",
-              "  pm.expect(json.spec.defaultBackend).to.eql(\"blue\");",
-              "  pm.expect(json.spec.rules[0].backend).to.eql(\"green\");",
-              "  pm.expect(json.spec.rules[0].match.value).to.eql(\"999\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].name).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].matches[0].headers[0].value).to.eql(\"999\");",
               "});"
             ],
             "type": "text/javascript"
@@ -95,12 +93,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"spec\": {\n    \"defaultBackend\": \"green\"\n  }\n}"
+          "raw": "{\n  \"spec\": {\n    \"rules\": [\n      {\n        \"backendRefs\": [\n          {\n            \"name\": \"green\",\n            \"port\": 80\n          }\n        ]\n      }\n    ]\n  }\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "raw": "{{baseUrl}}/httproute/default/sample-route",
           "host": ["{{baseUrl}}"],
-          "path": ["apigateway", "default", "sample-apigateway"]
+          "path": ["httproute", "default", "sample-route"]
         }
       },
       "event": [
@@ -110,7 +108,8 @@
             "exec": [
               "pm.test(\"PATCH updated defaultBackend\", function () {",
               "  var json = pm.response.json();",
-              "  pm.expect(json.spec.defaultBackend).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].name).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].port).to.eql(80);",
               "});"
             ],
             "type": "text/javascript"
@@ -125,9 +124,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "raw": "{{baseUrl}}/httproute/default/sample-route",
           "host": ["{{baseUrl}}"],
-          "path": ["apigateway", "default", "sample-apigateway"]
+          "path": ["httproute", "default", "sample-route"]
         }
       },
       "event": [
@@ -137,7 +136,8 @@
             "exec": [
               "pm.test(\"GET after PATCH reflects patch\", function () {",
               "  var json = pm.response.json();",
-              "  pm.expect(json.spec.defaultBackend).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].name).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].backendRefs[0].port).to.eql(80);",
               "});"
             ],
             "type": "text/javascript"

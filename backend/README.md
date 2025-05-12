@@ -1,45 +1,59 @@
-# Go Backend for API Gateway CRD
+# Backend Setup & Testing
 
-This backend exposes a REST API to fetch a specific Kubernetes API Gateway CRD by namespace and name.
+## 1. Create a Kubernetes Cluster with Kind
 
-## Features
-- Exposes `GET /apigateway/{namespace}/{name}`
-- Returns the raw API Gateway CRD as JSON
-- Uses Kubernetes dynamic client (no codegen required)
-
-## Prerequisites
-- Go 1.20+
-- Access to a Kubernetes cluster with the API Gateway CRD installed
-- KUBECONFIG set (for local dev) or run in-cluster with proper RBAC
-
-## Usage
-
-### 1. Install dependencies
-```
-go mod tidy
+Install Kind if you don't have it:
+```sh
+brew install kind
 ```
 
-### 2. Run the backend
+Create a cluster named `ck8s`:
+```sh
+kind create cluster --name ck8s
 ```
+
+## 2. Apply the API Gateway CRD
+
+Make sure `kubectl` is installed and configured for your Kind cluster:
+```sh
+kubectl cluster-info --context kind-ck8s
+```
+
+Apply the CRD:
+```sh
+cd backend
+./apply-apigateway-crd.sh
+```
+
+## 3. Run the Backend Service
+
+Export your kubeconfig for Kind:
+```sh
+export KUBECONFIG="$(kind get kubeconfig-path --name=ck8s 2>/dev/null || kind get kubeconfig --name=ck8s)"
+```
+
+Run the backend service:
+```sh
 go run main.go
 ```
 
-### 3. Query an API Gateway CRD
-```
-curl http://localhost:8080/apigateway/<namespace>/<name>
+The service will listen on `localhost:8080`.
+
+## 4. Test the API with Newman
+
+Install newman if you don't have it:
+```sh
+npm install -g newman
 ```
 
-## Configuration
-- By default, uses in-cluster config. Falls back to `$KUBECONFIG` or `$HOME/.kube/config` if not running in cluster.
-- Adjust the `GroupVersionResource` in `main.go` if your CRD group/version/resource differs.
-
-## Example
-```
-curl http://localhost:8080/apigateway/default/my-apigateway
+Run the Postman collection:
+```sh
+newman run apigateway-crd.postman_collection.json
 ```
 
 ---
 
-**References:**
-- [Kubernetes dynamic client-go](https://pkg.go.dev/k8s.io/client-go/dynamic)
-- [Kubernetes API Gateway CRD](https://gateway-api.sigs.k8s.io/) 
+**Notes:**
+- The CRD example is in `apigateway-crd.yaml`. Adjust as needed for your use case.
+- The backend service must have access to your kubeconfig to interact with the cluster.
+- If you want to run the backend inside the cluster, you will need a Dockerfile and Kubernetes manifests for deployment.

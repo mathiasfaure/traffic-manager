@@ -1,15 +1,15 @@
 openapi: 3.1.0
 info:
-  title: Traffic Manager API Gateway Backend
+  title: Traffic Manager HTTPRoute Backend
   version: 1.0.0
-  description: API for managing APIGateway CRDs in Kubernetes
+  description: API for managing HTTPRoute resources in Kubernetes
 servers:
   - url: http://localhost:8080
 paths:
-  /apigateway/{namespace}/{name}:
+  /httproute/{namespace}/{name}:
     get:
-      summary: Get an API Gateway CRD
-      operationId: getAPIGateway
+      summary: Get an HTTPRoute resource
+      operationId: getHTTPRoute
       parameters:
         - name: namespace
           in: path
@@ -23,11 +23,11 @@ paths:
             type: string
       responses:
         '200':
-          description: The APIGateway resource
+          description: The HTTPRoute resource
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIGateway'
+                $ref: '#/components/schemas/HTTPRoute'
         '400':
           description: Bad request
         '404':
@@ -35,8 +35,8 @@ paths:
         '500':
           description: Internal server error
     put:
-      summary: Update an API Gateway CRD (full replace)
-      operationId: updateAPIGateway
+      summary: Update an HTTPRoute resource (full replace)
+      operationId: updateHTTPRoute
       parameters:
         - name: namespace
           in: path
@@ -53,14 +53,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/APIGateway'
+              $ref: '#/components/schemas/HTTPRoute'
       responses:
         '200':
-          description: The updated APIGateway resource
+          description: The updated HTTPRoute resource
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIGateway'
+                $ref: '#/components/schemas/HTTPRoute'
         '400':
           description: Bad request
         '404':
@@ -68,8 +68,8 @@ paths:
         '500':
           description: Internal server error
     patch:
-      summary: Patch an API Gateway CRD (merge patch)
-      operationId: patchAPIGateway
+      summary: Patch an HTTPRoute resource (merge patch)
+      operationId: patchHTTPRoute
       parameters:
         - name: namespace
           in: path
@@ -87,13 +87,21 @@ paths:
           application/merge-patch+json:
             schema:
               type: object
+              properties:
+                spec:
+                  type: object
+                  properties:
+                    rules:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/HTTPRouteRule'
       responses:
         '200':
-          description: The patched APIGateway resource
+          description: The patched HTTPRoute resource
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIGateway'
+                $ref: '#/components/schemas/HTTPRoute'
         '400':
           description: Bad request
         '404':
@@ -102,7 +110,7 @@ paths:
           description: Internal server error
 components:
   schemas:
-    APIGateway:
+    HTTPRoute:
       type: object
       required:
         - apiVersion
@@ -112,10 +120,10 @@ components:
       properties:
         apiVersion:
           type: string
-          example: traffic-manager.io/v1alpha1
+          example: gateway.networking.k8s.io/v1
         kind:
           type: string
-          example: APIGateway
+          example: HTTPRoute
         metadata:
           type: object
           required:
@@ -132,29 +140,52 @@ components:
         spec:
           type: object
           required:
-            - defaultBackend
+            - parentRefs
             - rules
           properties:
-            defaultBackend:
-              type: string
-              description: The default backend service
-            rules:
+            parentRefs:
               type: array
               items:
                 type: object
                 required:
-                  - match
-                  - backend
+                  - name
                 properties:
-                  match:
-                    type: object
-                    required:
-                      - header
-                      - value
-                    properties:
-                      header:
-                        type: string
-                      value:
-                        type: string
-                  backend:
-                    type: string 
+                  name:
+                    type: string
+            rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/HTTPRouteRule'
+    HTTPRouteRule:
+      type: object
+      properties:
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              headers:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - name
+                    - value
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+        backendRefs:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - port
+            properties:
+              name:
+                type: string
+              port:
+                type: integer
+                description: Port number for the backend Service 

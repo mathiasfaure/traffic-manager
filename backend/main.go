@@ -19,14 +19,14 @@ import (
 
 var (
 	gvr = schema.GroupVersionResource{
-		Group:    "traffic-manager.io", // updated to match the CRD
-		Version:  "v1alpha1",
-		Resource: "apigateways",
+		Group:    "gateway.networking.k8s.io",
+		Version:  "v1",
+		Resource: "httproutes",
 	}
 )
 
 func main() {
-	http.HandleFunc("/apigateway/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/httproute/", func(w http.ResponseWriter, r *http.Request) {
 		// CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User")
@@ -40,11 +40,11 @@ func main() {
 		log.Printf("%s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		switch r.Method {
 		case http.MethodGet:
-			handleGetAPIGateway(w, r)
+			handleGetHTTPRoute(w, r)
 		case http.MethodPut:
-			handlePutAPIGateway(w, r)
+			handlePutHTTPRoute(w, r)
 		case http.MethodPatch:
-			handlePatchAPIGateway(w, r)
+			handlePatchHTTPRoute(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -53,11 +53,11 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func handleGetAPIGateway(w http.ResponseWriter, r *http.Request) {
+func handleGetHTTPRoute(w http.ResponseWriter, r *http.Request) {
 	parts := splitPath(r.URL.Path)
 	if len(parts) != 3 {
 		log.Printf("GET %s: bad path", r.URL.Path)
-		http.Error(w, "Usage: /apigateway/{namespace}/{name}", http.StatusBadRequest)
+		http.Error(w, "Usage: /httproute/{namespace}/{name}", http.StatusBadRequest)
 		return
 	}
 	namespace, name := parts[1], parts[2]
@@ -72,7 +72,7 @@ func handleGetAPIGateway(w http.ResponseWriter, r *http.Request) {
 	obj, err := client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("GET %s: failed to get: %v", r.URL.Path, err)
-		http.Error(w, "Failed to get API Gateway: "+err.Error(), http.StatusNotFound)
+		http.Error(w, "Failed to get HTTP Route: "+err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -81,11 +81,11 @@ func handleGetAPIGateway(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(obj.Object)
 }
 
-func handlePutAPIGateway(w http.ResponseWriter, r *http.Request) {
+func handlePutHTTPRoute(w http.ResponseWriter, r *http.Request) {
 	parts := splitPath(r.URL.Path)
 	if len(parts) != 3 {
 		log.Printf("PUT %s: bad path", r.URL.Path)
-		http.Error(w, "Usage: /apigateway/{namespace}/{name}", http.StatusBadRequest)
+		http.Error(w, "Usage: /httproute/{namespace}/{name}", http.StatusBadRequest)
 		return
 	}
 	namespace, name := parts[1], parts[2]
@@ -120,7 +120,7 @@ func handlePutAPIGateway(w http.ResponseWriter, r *http.Request) {
 	current, err := client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("PUT %s by %s: failed to get current resource: %v", r.URL.Path, user, err)
-		http.Error(w, "Failed to get current API Gateway: "+err.Error(), http.StatusNotFound)
+		http.Error(w, "Failed to get current HTTP Route: "+err.Error(), http.StatusNotFound)
 		return
 	}
 	currentRV, _, _ := unstructured.NestedString(current.Object, "metadata", "resourceVersion")
@@ -136,7 +136,7 @@ func handlePutAPIGateway(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		log.Printf("PUT %s by %s: failed to update: %v", r.URL.Path, user, err)
-		http.Error(w, "Failed to update API Gateway: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to update HTTP Route: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -145,11 +145,11 @@ func handlePutAPIGateway(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(updated.Object)
 }
 
-func handlePatchAPIGateway(w http.ResponseWriter, r *http.Request) {
+func handlePatchHTTPRoute(w http.ResponseWriter, r *http.Request) {
 	parts := splitPath(r.URL.Path)
 	if len(parts) != 3 {
 		log.Printf("PATCH %s: bad path", r.URL.Path)
-		http.Error(w, "Usage: /apigateway/{namespace}/{name}", http.StatusBadRequest)
+		http.Error(w, "Usage: /httproute/{namespace}/{name}", http.StatusBadRequest)
 		return
 	}
 	namespace, name := parts[1], parts[2]
@@ -184,7 +184,7 @@ func handlePatchAPIGateway(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		log.Printf("PATCH %s by %s: failed to patch: %v", r.URL.Path, user, err)
-		http.Error(w, "Failed to patch API Gateway: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to patch HTTP Route: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
