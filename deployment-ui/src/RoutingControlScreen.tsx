@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -34,6 +34,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { headerMappings } from './@deployment-ui/config/headers';
+import { getAPIGateway, patchAPIGateway, APIGateway } from './api/apigateway';
 
 // Stub: initial rules
 const initialRules = [
@@ -62,13 +63,57 @@ export default function RoutingControlScreen() {
   const [defaultRoute, setDefaultRoute] = useState<'blue' | 'green'>('blue');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rollbackOpen, setRollbackOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    getAPIGateway('default', 'sample-apigateway')
+      .then((data) => {
+        setDefaultRoute((data.spec.defaultBackend as 'blue' | 'green') || 'blue');
+        setRules(
+          (data.spec.rules || []).map((r, i) => ({
+            id: i + 1,
+            header: headerMappings.find(m => m.actual === r.match.header)?.logical || r.match.header,
+            value: r.match.value,
+            target: r.backend,
+          }))
+        );
+      })
+      .catch((e) => setSnackbar({ open: true, message: e.message, severity: 'error' }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const syncRulesToBackend = async (newRules: typeof rules, newDefault: 'blue' | 'green') => {
+    setLoading(true);
+    try {
+      await patchAPIGateway('default', 'sample-apigateway', {
+        defaultBackend: newDefault,
+        rules: newRules.map(r => ({
+          match: {
+            header: headerMappings.find(m => m.logical === r.header)?.actual || r.header,
+            value: r.value,
+          },
+          backend: r.target,
+        })),
+      }, 'frontend-user');
+      setSnackbar({ open: true, message: 'Routing updated', severity: 'success' });
+    } catch (e: any) {
+      setSnackbar({ open: true, message: e.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRuleChange = (id: number, field: string, value: string) => {
-    setRules(rules.map(rule => rule.id === id ? { ...rule, [field]: value } : rule));
+    const updated = rules.map(rule => rule.id === id ? { ...rule, [field]: value } : rule);
+    setRules(updated);
+    syncRulesToBackend(updated, defaultRoute);
   };
 
   const handleDeleteRule = (id: number) => {
-    setRules(rules.filter(rule => rule.id !== id));
+    const updated = rules.filter(rule => rule.id !== id);
+    setRules(updated);
+    syncRulesToBackend(updated, defaultRoute);
   };
 
   const handleAddRule = () => {
@@ -76,9 +121,24 @@ export default function RoutingControlScreen() {
       setSnackbar({ open: true, message: 'Header and value required', severity: 'error' });
       return;
     }
-    setRules([...rules, { ...newRule, id: Date.now() }]);
+    const updated = [...rules, { ...newRule, id: Date.now() }];
+    setRules(updated);
     setNewRule({ header: '', value: '', target: 'blue' });
     setSnackbar({ open: true, message: 'Rule added', severity: 'success' });
+    syncRulesToBackend(updated, defaultRoute);
+  };
+
+  const handleSwitchAllToGreen = () => {
+    setRules([]);
+    setDefaultRoute('green');
+    syncRulesToBackend([], 'green');
+    setConfirmOpen(false);
+  };
+
+  const handleRollbackToBlue = () => {
+    setDefaultRoute('blue');
+    syncRulesToBackend(rules, 'blue');
+    setRollbackOpen(false);
   };
 
   return (
@@ -206,7 +266,7 @@ export default function RoutingControlScreen() {
                 variant="contained"
                 color="success"
                 startIcon={<SwapHorizIcon />}
-                onClick={() => setConfirmOpen(true)}
+                onClick={handleSwitchAllToGreen}
                 sx={{ minWidth: 180 }}
               >
                 Switch All Traffic to Green
@@ -219,7 +279,7 @@ export default function RoutingControlScreen() {
                 variant="outlined"
                 color="primary"
                 startIcon={<UndoIcon />}
-                onClick={() => setRollbackOpen(true)}
+                onClick={handleRollbackToBlue}
                 disabled={defaultRoute === 'blue'}
                 sx={{ minWidth: 160 }}
               >
@@ -305,7 +365,7 @@ export default function RoutingControlScreen() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)} color="inherit">Cancel</Button>
-          <Button onClick={() => { setRules([]); setDefaultRoute('green'); setConfirmOpen(false); }} color="success" variant="contained" autoFocus>
+          <Button onClick={handleSwitchAllToGreen} color="success" variant="contained" autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -319,7 +379,7 @@ export default function RoutingControlScreen() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRollbackOpen(false)} color="inherit">Cancel</Button>
-          <Button onClick={() => { setDefaultRoute('blue'); setRollbackOpen(false); }} color="primary" variant="contained" autoFocus>
+          <Button onClick={handleRollbackToBlue} color="primary" variant="contained" autoFocus>
             Confirm
           </Button>
         </DialogActions>

@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: Traffic Manager API Gateway Backend
+  version: 1.0.0
+  description: API for managing APIGateway CRDs in Kubernetes
+servers:
+  - url: http://localhost:8080
+paths:
+  /apigateway/{namespace}/{name}:
+    get:
+      summary: Get an API Gateway CRD
+      operationId: getAPIGateway
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The APIGateway resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIGateway'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update an API Gateway CRD (full replace)
+      operationId: updateAPIGateway
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIGateway'
+      responses:
+        '200':
+          description: The updated APIGateway resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIGateway'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+    patch:
+      summary: Patch an API Gateway CRD (merge patch)
+      operationId: patchAPIGateway
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: The patched APIGateway resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIGateway'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    APIGateway:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          example: traffic-manager.io/v1alpha1
+        kind:
+          type: string
+          example: APIGateway
+        metadata:
+          type: object
+          required:
+            - name
+            - namespace
+          properties:
+            name:
+              type: string
+            namespace:
+              type: string
+            resourceVersion:
+              type: string
+              description: Kubernetes resource version
+        spec:
+          type: object
+          required:
+            - defaultBackend
+            - rules
+          properties:
+            defaultBackend:
+              type: string
+              description: The default backend service
+            rules:
+              type: array
+              items:
+                type: object
+                required:
+                  - match
+                  - backend
+                properties:
+                  match:
+                    type: object
+                    required:
+                      - header
+                      - value
+                    properties:
+                      header:
+                        type: string
+                      value:
+                        type: string
+                  backend:
+                    type: string 

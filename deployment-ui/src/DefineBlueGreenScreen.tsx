@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, Autocomplete, TextField, Button, Stack, Snackbar, Alert } from '@mui/material';
+import { getAPIGateway, putAPIGateway, APIGateway } from './api/apigateway';
 
 type ServiceOption = { label: string; value: string; disabled?: boolean };
 
@@ -13,18 +14,53 @@ export default function DefineBlueGreenScreen() {
   const [blueService, setBlueService] = useState<string | null>(null);
   const [greenService, setGreenService] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    getAPIGateway('default', 'sample-apigateway')
+      .then((data) => {
+        setBlueService(data.spec.defaultBackend || null);
+        // Set greenService from the first rule's backend if available
+        setGreenService(data.spec.rules?.[0]?.backend || null);
+      })
+      .catch((e) => setSnackbar({ open: true, message: e.message, severity: 'error' }))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Filter options to prevent selecting the same service for both
   const blueOptions: ServiceOption[] = k8sServices.map(s => ({ ...s, disabled: s.value === greenService }));
   const greenOptions: ServiceOption[] = k8sServices.map(s => ({ ...s, disabled: s.value === blueService }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!blueService || !greenService) {
       setSnackbar({ open: true, message: 'Please select both Blue and Green services.', severity: 'error' });
       return;
     }
-    // TODO: Call backend to save mapping
-    setSnackbar({ open: true, message: 'Mappings saved successfully!', severity: 'success' });
+    setLoading(true);
+    try {
+      // Fetch current CRD to get resourceVersion
+      const current = await getAPIGateway('default', 'sample-apigateway');
+      const updated: APIGateway = {
+        ...current,
+        spec: {
+          ...current.spec,
+          defaultBackend: blueService,
+          rules: [
+            {
+              match: { header: 'x-nexus-user-id', value: '999' },
+              backend: greenService,
+            },
+          ],
+        },
+      };
+      await putAPIGateway('default', 'sample-apigateway', updated, 'frontend-user');
+      setSnackbar({ open: true, message: 'Mappings saved successfully!', severity: 'success' });
+    } catch (e: any) {
+      setSnackbar({ open: true, message: e.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,7 +97,7 @@ export default function DefineBlueGreenScreen() {
         </Card>
       </Stack>
       <Box sx={{ mt: 4, textAlign: 'right' }}>
-        <Button variant="contained" color="primary" onClick={handleSave}>Save</Button>
+        <Button variant="contained" color="primary" onClick={handleSave} disabled={loading}>Save</Button>
       </Box>
       <Snackbar
         open={snackbar.open}

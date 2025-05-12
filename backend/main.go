@@ -27,6 +27,16 @@ var (
 
 func main() {
 	http.HandleFunc("/apigateway/", func(w http.ResponseWriter, r *http.Request) {
+		// CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, PATCH, OPTIONS")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		log.Printf("%s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		switch r.Method {
 		case http.MethodGet:
