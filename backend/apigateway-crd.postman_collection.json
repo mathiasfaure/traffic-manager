@@ -1,0 +1,150 @@
+{
+  "info": {
+    "name": "API Gateway CRD Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Get API Gateway (Initial)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "host": ["{{baseUrl}}"],
+          "path": ["apigateway", "default", "sample-apigateway"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update API Gateway (PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User", "value": "postman-tester" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"apiVersion\": \"traffic-manager.io/v1alpha1\",\n  \"kind\": \"APIGateway\",\n  \"metadata\": {\n    \"name\": \"sample-apigateway\",\n    \"namespace\": \"default\"\n  },\n  \"spec\": {\n    \"defaultBackend\": \"blue\",\n    \"rules\": [\n      {\n        \"match\": {\"header\": \"x-nexus-user-id\", \"value\": \"999\"},\n        \"backend\": \"green\"\n      }\n    ]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "host": ["{{baseUrl}}"],
+          "path": ["apigateway", "default", "sample-apigateway"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"PUT updated backend and rule\", function () {",
+              "  var json = pm.response.json();",
+              "  pm.expect(json.spec.defaultBackend).to.eql(\"blue\");",
+              "  pm.expect(json.spec.rules[0].backend).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].match.value).to.eql(\"999\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get API Gateway (After PUT)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "host": ["{{baseUrl}}"],
+          "path": ["apigateway", "default", "sample-apigateway"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"GET after PUT reflects update\", function () {",
+              "  var json = pm.response.json();",
+              "  pm.expect(json.spec.defaultBackend).to.eql(\"blue\");",
+              "  pm.expect(json.spec.rules[0].backend).to.eql(\"green\");",
+              "  pm.expect(json.spec.rules[0].match.value).to.eql(\"999\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Patch API Gateway (PATCH)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/merge-patch+json" },
+          { "key": "X-User", "value": "postman-tester" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"spec\": {\n    \"defaultBackend\": \"green\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "host": ["{{baseUrl}}"],
+          "path": ["apigateway", "default", "sample-apigateway"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"PATCH updated defaultBackend\", function () {",
+              "  var json = pm.response.json();",
+              "  pm.expect(json.spec.defaultBackend).to.eql(\"green\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get API Gateway (After PATCH)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apigateway/default/sample-apigateway",
+          "host": ["{{baseUrl}}"],
+          "path": ["apigateway", "default", "sample-apigateway"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"GET after PATCH reflects patch\", function () {",
+              "  var json = pm.response.json();",
+              "  pm.expect(json.spec.defaultBackend).to.eql(\"green\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    }
+  ]
+} 
