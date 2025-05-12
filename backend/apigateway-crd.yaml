@@ -1,0 +1,16 @@
+apiVersion: traffic-manager.io/v1alpha1
+kind: APIGateway
+metadata:
+  name: sample-apigateway
+  namespace: default
+spec:
+  defaultBackend: blue
+  rules:
+    - match:
+        header: x-nexus-user-id
+        value: "123"
+      backend: blue
+    - match:
+        header: host
+        value: example.com
+      backend: green 
