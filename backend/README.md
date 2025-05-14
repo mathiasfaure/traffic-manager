@@ -51,6 +51,40 @@ Run the Postman collection:
 newman run apigateway-crd.postman_collection.json
 ```
 
+## 5. Grant RBAC Permissions to the Service Account
+
+To allow the backend to access HTTPRoute resources using the service account token, you must grant the appropriate Kubernetes RBAC permissions.
+
+### Create a ClusterRole for HTTPRoute Access
+```sh
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: traffic-manager-httproute-admin
+rules:
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["httproutes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+EOF
+```
+
+### Bind the Role to Your Service Account
+```sh
+kubectl create clusterrolebinding traffic-manager-httproute-admin-binding \
+  --clusterrole=traffic-manager-httproute-admin \
+  --serviceaccount=default:traffic-manager-user
+```
+
+### Verify Permissions
+```sh
+kubectl auth can-i get httproutes --as=system:serviceaccount:default:traffic-manager-user
+```
+You should see:
+```
+yes
+```
+
 ---
 
 **Notes:**

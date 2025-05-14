@@ -22,8 +22,18 @@ export interface HTTPRouteRule {
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
+function getAuthHeaders(user?: string) {
+  const token = localStorage.getItem('kubeconfigToken');
+  return {
+    ...(user ? { "X-User": user } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 export async function getHTTPRoute(namespace: string, name: string): Promise<HTTPRoute> {
-  const res = await fetch(`${BASE_URL}/httproute/${namespace}/${name}`);
+  const res = await fetch(`${BASE_URL}/httproute/${namespace}/${name}`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -34,7 +44,7 @@ export async function putHTTPRoute(namespace: string, name: string, data: HTTPRo
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        ...(user ? { "X-User": user } : {}),
+        ...getAuthHeaders(user),
       },
       body: JSON.stringify(data),
     }
@@ -49,7 +59,7 @@ export async function patchHTTPRoute(namespace: string, name: string, patch: Par
       method: "PATCH",
       headers: {
         "Content-Type": "application/merge-patch+json",
-        ...(user ? { "X-User": user } : {}),
+        ...getAuthHeaders(user),
       },
       body: JSON.stringify({ spec: patch }),
     }
