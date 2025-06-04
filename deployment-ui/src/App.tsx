@@ -19,8 +19,9 @@ function parseJwt(token: string): { sub?: string; aud?: string | string[] } {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
     const jsonPayload = decodeURIComponent(
-      atob(base64)
+      atob(padded)
         .split('')
         .map(function (c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -29,7 +30,7 @@ function parseJwt(token: string): { sub?: string; aud?: string | string[] } {
     );
     const payload = JSON.parse(jsonPayload);
     return { sub: payload.sub, aud: payload.aud };
-  } catch (e) {
+  } catch {
     return {};
   }
 }
