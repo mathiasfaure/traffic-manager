@@ -274,7 +274,7 @@ export default function RoutingControlScreen() {
                 variant="contained"
                 color="success"
                 startIcon={<SwapHorizIcon />}
-                onClick={handleSwitchAllToGreen}
+                onClick={() => setConfirmOpen(true)}
                 sx={{ minWidth: 180 }}
               >
                 Switch All Traffic to Green
@@ -287,7 +287,7 @@ export default function RoutingControlScreen() {
                 variant="outlined"
                 color="primary"
                 startIcon={<UndoIcon />}
-                onClick={handleRollbackToBlue}
+                onClick={() => setRollbackOpen(true)}
                 disabled={defaultRoute === 'blue'}
                 sx={{ minWidth: 160 }}
               >
