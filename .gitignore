@@ -1,6 +1,0 @@
-# deployment-ui/
-.DS_Store
-node_modules/
-*.log 
-node_modules
- backend
