@@ -1,0 +1,191 @@
+openapi: 3.1.0
+info:
+  title: Traffic Manager HTTPRoute Backend
+  version: 1.0.0
+  description: API for managing HTTPRoute resources in Kubernetes
+servers:
+  - url: http://localhost:8080
+paths:
+  /httproute/{namespace}/{name}:
+    get:
+      summary: Get an HTTPRoute resource
+      operationId: getHTTPRoute
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The HTTPRoute resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPRoute'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update an HTTPRoute resource (full replace)
+      operationId: updateHTTPRoute
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HTTPRoute'
+      responses:
+        '200':
+          description: The updated HTTPRoute resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPRoute'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+    patch:
+      summary: Patch an HTTPRoute resource (merge patch)
+      operationId: patchHTTPRoute
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              properties:
+                spec:
+                  type: object
+                  properties:
+                    rules:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/HTTPRouteRule'
+      responses:
+        '200':
+          description: The patched HTTPRoute resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPRoute'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    HTTPRoute:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          example: gateway.networking.k8s.io/v1
+        kind:
+          type: string
+          example: HTTPRoute
+        metadata:
+          type: object
+          required:
+            - name
+            - namespace
+          properties:
+            name:
+              type: string
+            namespace:
+              type: string
+            resourceVersion:
+              type: string
+              description: Kubernetes resource version
+        spec:
+          type: object
+          required:
+            - parentRefs
+            - rules
+          properties:
+            parentRefs:
+              type: array
+              items:
+                type: object
+                required:
+                  - name
+                properties:
+                  name:
+                    type: string
+            rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/HTTPRouteRule'
+    HTTPRouteRule:
+      type: object
+      properties:
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              headers:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - name
+                    - value
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+        backendRefs:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - port
+            properties:
+              name:
+                type: string
+              port:
+                type: integer
+                description: Port number for the backend Service 
